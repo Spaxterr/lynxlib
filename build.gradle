@@ -1,0 +1,84 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(11)
+
+minecraft {
+    mappings channel: 'official', version: '1.16.5'
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.16.5-36.2.34'
+    api 'com.fasterxml.jackson.core:jackson-databind:2.14.0'
+}
+
+jar {
+    archiveClassifier = 'slim'
+    manifest {
+        attributes([
+                "Specification-Title"     : mod_id,
+                "Specification-Vendor"    : mod_authors,
+                "Specification-Version"   : "1",
+                "Implementation-Title"    : mod_name,
+                "Implementation-Version"  : mod_version,
+                "Implementation-Vendor"   : mod_authors,
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
+
+task sourcesJar(type: Jar) {
+    archiveClassifier.set('sources')
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar) {
+    archiveClassifier.set('javadoc')
+    from tasks.javadoc
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            groupId = 'dev.spaxter.lynxlib'
+            artifactId = 'lynxlib'
+            version = '1.0'
+
+            // Adjust dependency scopes in the POM
+            pom.withXml {
+                asNode().dependencies?.dependency?.each { depNode ->
+                    def groupId = depNode.groupId.text()
+                    def artifactId = depNode.artifactId.text()
+                    if (groupId == 'net.minecraftforge' && artifactId == 'forge') {
+                        depNode.scope*.value = 'provided' // Change the scope of minecraft forge to provided
+                    }
+                }
+            }
+
+            artifact tasks.sourcesJar
+            artifact tasks.javadocJar
+        }
+    }
+
+    repositories {
+        mavenLocal()
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+build.dependsOn publishToMavenLocal
