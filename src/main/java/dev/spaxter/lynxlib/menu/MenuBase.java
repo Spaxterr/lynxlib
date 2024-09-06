@@ -29,6 +29,7 @@ public abstract class MenuBase extends Container {
 
     protected final ItemStackHandler itemStackHandler;
     private final Map<Slot, IClickHandlerCallback> clickHandlers;
+    private boolean isClickable = true;
     public final PlayerInventory playerInventory;
     public final int rows;
     public final int columns;
@@ -240,20 +241,24 @@ public abstract class MenuBase extends Container {
     @Override
     @Nonnull
     public ItemStack clicked(int slot, int button, @Nonnull ClickType clickType, @Nonnull PlayerEntity player) {
-        Messenger.debug(player, "You clicked slot &e" + slot, this.getClass());
-        this.refresh(player);
+        if (this.isClickable) {
+            this.isClickable = false;
+            Messenger.debug(player, "You clicked slot &e" + slot, this.getClass());
+            this.refresh(player);
 
-        if (slot < 0 || clickType == ClickType.THROW) {
-            return ItemStack.EMPTY;
-        }
-
-        Slot clicked = this.slots.get(slot);
-        if (clickHandlers.containsKey(clicked)) {
-            try {
-                clickHandlers.get(clicked).operation(clicked, player);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            if (slot < 0 || clickType == ClickType.THROW) {
+                return ItemStack.EMPTY;
             }
+
+            Slot clicked = this.slots.get(slot);
+            if (clickHandlers.containsKey(clicked)) {
+                try {
+                    clickHandlers.get(clicked).operation(clicked, player);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            this.isClickable = true;
         }
         return ItemStack.EMPTY;
     }
