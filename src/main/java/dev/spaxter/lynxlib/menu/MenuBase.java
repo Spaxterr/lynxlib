@@ -150,16 +150,25 @@ public abstract class MenuBase extends Container {
     }
 
     /**
+     * Empty the inventory menu, removing all items and click handlers.
+     */
+    public void empty() {
+        this.clickHandlers.clear();
+        ItemStack air = new ItemStack(Items.AIR);
+        for (int i = 0; i < this.rows * this.columns; i++) {
+            Slot slot = this.slots.get(i);
+            slot.set(air);
+        }
+    }
+
+    /**
      * Create the slots for the inventory menu.
      */
     private void initSlots() {
-        int index = 0;
-        for (int row = 0; row < this.rows; row++) { // 3 rows
-            for (int col = 0; col < this.columns; col++) { // 9 columns
-                int x = MagicValues.INVENTORY_SLOT_HORIZONTAL_OFFSET + col * MagicValues.INVENTORY_SLOT_HEIGHT;
-                int y = MagicValues.INVENTORY_SLOT_HEIGHT + row * MagicValues.INVENTORY_SLOT_HEIGHT;
-                this.addSlot(new LockedSlot(this.itemStackHandler, index++, x, y));
-            }
+        for (int i = 0; i < this.rows * this.columns; i++) {
+            int x = MagicValues.INVENTORY_SLOT_HORIZONTAL_OFFSET + i % this.columns * MagicValues.INVENTORY_SLOT_HEIGHT;
+            int y = MagicValues.INVENTORY_SLOT_HEIGHT + i / this.columns * MagicValues.INVENTORY_SLOT_HEIGHT;
+            this.addSlot(new LockedSlot(this.itemStackHandler, i, x, y));
         }
         Messenger.debug(this.playerInventory.player, "Initialized menu slots", this.getClass());
     }
