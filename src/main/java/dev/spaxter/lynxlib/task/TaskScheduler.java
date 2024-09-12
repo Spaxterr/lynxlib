@@ -16,17 +16,22 @@ public class TaskScheduler {
     private static MinecraftServer server;
 
     /**
-     * Schedules a task to run after a delay.
+     * Schedules a task to run after a delay. If {@code delay == 0}, {@code task} will be executed immediately.
      *
-     * @param delay The delay in seconds
-     * @param task  The task to run
+     * @param server The server to set the task for
+     * @param delay  The delay in seconds
+     * @param task   The task to run
      */
-    public static void scheduleTask(MinecraftServer server, int delay, Runnable task) {
+    public static void scheduleTask(MinecraftServer server, long delay, Runnable task) {
         long currentTick = server.getTickCount();
-        long executionTick = currentTick + (long) delay * MagicValues.TICKS_PER_SECOND;
+        long executionTick = currentTick + delay * MagicValues.TICKS_PER_SECOND;
 
-        DelayedTask delayedTask = new DelayedTask(executionTick, task);
-        taskQueue.add(delayedTask);
+        if (delay == 0) {
+            task.run();
+        } else {
+            DelayedTask delayedTask = new DelayedTask(executionTick, task);
+            taskQueue.add(delayedTask);
+        }
     }
 
     /**
