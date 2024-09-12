@@ -5,7 +5,7 @@ import java.util.PriorityQueue;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.server.ServerLifecycleHooks;
+import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
 
 /**
  * Basic task scheduler for server-side tasks.
@@ -13,6 +13,7 @@ import net.minecraftforge.fml.server.ServerLifecycleHooks;
 public class TaskScheduler {
 
     private static final PriorityQueue<DelayedTask> taskQueue = new PriorityQueue<>();
+    private static MinecraftServer server;
 
     /**
      * Schedules a task to run after a delay.
@@ -36,7 +37,6 @@ public class TaskScheduler {
     @SubscribeEvent
     public static void onTick(TickEvent.ServerTickEvent event) {
         if (event.phase == TickEvent.Phase.END && !taskQueue.isEmpty()) {
-            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
             long currentTick = server.getTickCount();
 
             // Process tasks whose scheduled execution time has passed
@@ -47,13 +47,23 @@ public class TaskScheduler {
         }
     }
 
-    private static class DelayedTask {
+    @SubscribeEvent
+    public static void onServerStart(FMLServerStartingEvent event) {
+        server = event.getServer();
+    }
+
+    private static class DelayedTask implements Comparable<DelayedTask> {
         private final long executionTick;
         private final Runnable task;
 
         public DelayedTask(long executionTick, Runnable task) {
             this.executionTick = executionTick;
             this.task = task;
+        }
+
+        @Override
+        public int compareTo(DelayedTask otherTask) {
+            return Long.compare(this.executionTick, otherTask.executionTick);
         }
     }
 }
