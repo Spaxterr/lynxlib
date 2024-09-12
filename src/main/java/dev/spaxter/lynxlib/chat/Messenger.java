@@ -1,6 +1,7 @@
 package dev.spaxter.lynxlib.chat;
 
 import dev.spaxter.lynxlib.common.ColoredTextComponent;
+import javax.annotation.Nullable;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.text.TextComponent;
 
@@ -29,10 +30,12 @@ public class Messenger {
      * @param message The message to send
      * @param context The class the message was sent from
      */
-    public static void debug(final PlayerEntity player, final String message, Class<?> context) {
-        String prefix = DEBUG_PREFIX + " " + CONTEXT_PREFIX.replace("%context%", context.getSimpleName());
-        TextComponent chatMessage = formatMessage(prefix + " &7" + message);
-        player.sendMessage(chatMessage, player.getUUID());
+    public static void debug(final @Nullable PlayerEntity player, final String message, Class<?> context) {
+        if (player != null) {
+            String prefix = DEBUG_PREFIX + " " + CONTEXT_PREFIX.replace("%context%", context.getSimpleName());
+            TextComponent chatMessage = formatMessage(prefix + " &7" + message);
+            player.sendMessage(chatMessage, player.getUUID());
+        }
     }
 
     /**
@@ -42,10 +45,12 @@ public class Messenger {
      * @param error   The exception object
      * @param context The class the message was sent from
      */
-    public static void error(final PlayerEntity player, final Exception error, Class<?> context) {
-        String prefix = ERROR_PREFIX + " " + CONTEXT_PREFIX.replace("%context%", context.getSimpleName());
-        TextComponent chatMessage = formatMessage(prefix + " &c" + error.getLocalizedMessage());
-        player.sendMessage(chatMessage, player.getUUID());
+    public static void error(final @Nullable PlayerEntity player, final Exception error, Class<?> context) {
+        if (player != null) {
+            String prefix = ERROR_PREFIX + " " + CONTEXT_PREFIX.replace("%context%", context.getSimpleName());
+            TextComponent chatMessage = formatMessage(prefix + " &c" + error.getLocalizedMessage());
+            player.sendMessage(chatMessage, player.getUUID());
+        }
     }
 
     /**
@@ -54,8 +59,10 @@ public class Messenger {
      * @param player  The player to message
      * @param message The info message
      */
-    public static void info(final PlayerEntity player, final String message) {
-        TextComponent chatMessage = formatMessage(INFO_PREFIX + " &f" + message);
-        player.sendMessage(chatMessage, player.getUUID());
+    public static void info(final @Nullable PlayerEntity player, final String message) {
+        if (player != null) {
+            TextComponent chatMessage = formatMessage(INFO_PREFIX + " &f" + message);
+            player.sendMessage(chatMessage, player.getUUID());
+        }
     }
 }
