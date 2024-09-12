@@ -69,4 +69,28 @@ public class ItemUtil {
         displayTag.put("Lore", loreList);
         nbt.put("display", displayTag);
     }
+
+    /**
+     * Add or set an NBT tag for an item.
+     *
+     * @param itemStack The item stack
+     * @param key       Key of the NBT
+     * @param value     Value of the NBT as an integer
+     */
+    public static void setNbtTag(ItemStack itemStack, String key, int value) {
+        CompoundNBT nbt = itemStack.getOrCreateTag();
+        nbt.putInt(key, value);
+    }
+
+    /**
+     * Add or set an NBT tag for an item.
+     *
+     * @param itemStack The item stack
+     * @param key       Key of the NBT
+     * @param value     Value of the NBT as a string
+     */
+    public static void setNbtTag(ItemStack itemStack, String key, String value) {
+        CompoundNBT nbt = itemStack.getOrCreateTag();
+        nbt.putString(key, value);
+    }
 }
