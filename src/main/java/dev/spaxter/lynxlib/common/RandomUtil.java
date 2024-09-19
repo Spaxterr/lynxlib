@@ -32,4 +32,29 @@ public class RandomUtil {
 
         return new ArrayList<>(chosenElements);
     }
+
+    /**
+     * Choose one random element randomly from a list.
+     *
+     * @param source The list to pick from
+     * @param <T>    Type of element returned
+     * @return A randomly chosen element
+     */
+    public static <T> T chooseRandom(final List<T> source) {
+        return chooseRandom(source, 1).get(0);
+    }
+
+    /**
+     * Set a % chance to return {@code true}.
+     *
+     * @param chance Chance to return true, 0-100
+     * @return {@code true} or {@code false}
+     */
+    public static boolean chance(float chance) {
+        if (chance >= 100) {
+            return true;
+        } else {
+            return Math.random() * 100 < chance;
+        }
+    }
 }
