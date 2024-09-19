@@ -18,6 +18,8 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.play.server.SSetSlotPacket;
+import net.minecraft.util.SoundEvent;
+import net.minecraft.util.SoundEvents;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.SlotItemHandler;
 import net.minecraftforge.items.wrapper.PlayerInvWrapper;
@@ -30,6 +32,7 @@ public abstract class MenuBase extends Container {
     protected final ItemStackHandler itemStackHandler;
     private final Map<Slot, IClickHandlerCallback> clickHandlers;
     private boolean isClickable = true;
+    private SoundEvent clickSound = SoundEvents.TRIPWIRE_CLICK_ON;
     public final PlayerInventory playerInventory;
     public final int rows;
     public final int columns;
@@ -73,6 +76,15 @@ public abstract class MenuBase extends Container {
     public void setClickHandler(int slot, IClickHandlerCallback function) {
         clickHandlers.put(this.slots.get(slot), function);
         Messenger.debug(this.playerInventory.player, "Set click handler at slot &e" + slot, this.getClass());
+    }
+
+    /**
+     * Set the sound to play when a player clicks a clickable slot.
+     *
+     * @param sound The sound to play
+     */
+    public void setClickSound(SoundEvent sound) {
+        this.clickSound = sound;
     }
 
     /**
@@ -261,6 +273,7 @@ public abstract class MenuBase extends Container {
 
             Slot clicked = this.slots.get(slot);
             if (clickHandlers.containsKey(clicked)) {
+                player.playSound(this.clickSound, 1.0f, 1.0f);
                 try {
                     clickHandlers.get(clicked).operation(clicked, player);
                 } catch (Exception e) {
