@@ -129,6 +129,15 @@ public abstract class MenuBase extends Container {
     }
 
     /**
+     * Set the background of the inventory.
+     *
+     * @param item The item to use as the background
+     */
+    public void setBackground(final ItemStack item) {
+        this.fillWith(item);
+    }
+
+    /**
      * Fill all empty slots in the inventory with a given item.
      *
      * @param item The item to fill the menu with
