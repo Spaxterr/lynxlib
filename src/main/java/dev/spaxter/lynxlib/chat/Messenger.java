@@ -1,7 +1,10 @@
 package dev.spaxter.lynxlib.chat;
 
 import dev.spaxter.lynxlib.common.ColoredTextComponent;
+import io.netty.handler.logging.LogLevel;
 import javax.annotation.Nullable;
+
+import net.minecraft.command.CommandSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.text.TextComponent;
 
@@ -10,9 +13,18 @@ import net.minecraft.util.text.TextComponent;
  */
 public class Messenger {
 
+    public static void setLogLevel(LogLevel level) {
+        logLevel = level;
+    }
+
+    public static void setPrefix(String prefix) {
+        INFO_PREFIX = prefix;
+    }
+
+    private static LogLevel logLevel = LogLevel.INFO;
     private static final String DEBUG_PREFIX = "&8[&bDebug&8]&r";
     private static final String ERROR_PREFIX = "&8[&4Error&8]&r";
-    private static final String INFO_PREFIX = "&7[&bInfo&7]&r";
+    private static String INFO_PREFIX = "&7[&bInfo&7]&r";
     private static final String CONTEXT_PREFIX = "&8[&7%context%&8]&r";
 
     public static String translateColorCodes(String message) {
@@ -31,10 +43,12 @@ public class Messenger {
      * @param context The class the message was sent from
      */
     public static void debug(final @Nullable PlayerEntity player, final String message, Class<?> context) {
-        if (player != null) {
-            String prefix = DEBUG_PREFIX + " " + CONTEXT_PREFIX.replace("%context%", context.getSimpleName());
-            TextComponent chatMessage = formatMessage(prefix + " &7" + message);
-            player.sendMessage(chatMessage, player.getUUID());
+        if (logLevel.compareTo(LogLevel.DEBUG) <= 0) {
+            if (player != null) {
+                String prefix = DEBUG_PREFIX + " " + CONTEXT_PREFIX.replace("%context%", context.getSimpleName());
+                TextComponent chatMessage = formatMessage(prefix + " &7" + message);
+                player.sendMessage(chatMessage, player.getUUID());
+            }
         }
     }
 
@@ -47,7 +61,8 @@ public class Messenger {
      */
     public static void error(final @Nullable PlayerEntity player, final Exception error, Class<?> context) {
         if (player != null) {
-            String prefix = ERROR_PREFIX + " " + CONTEXT_PREFIX.replace("%context%", context.getSimpleName());
+            String prefix =
+                INFO_PREFIX + " " + ERROR_PREFIX + " " + CONTEXT_PREFIX.replace("%context%", context.getSimpleName());
             TextComponent chatMessage = formatMessage(prefix + " &c" + error.getLocalizedMessage());
             player.sendMessage(chatMessage, player.getUUID());
         }
