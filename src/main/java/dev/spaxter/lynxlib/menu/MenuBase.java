@@ -218,6 +218,10 @@ public abstract class MenuBase extends Container {
         }
     }
 
+    /**
+     * Called when the menu is closed.
+     */
+    public abstract void closed();
 
     /**
      * Validate provided coordinates in the inventory.
@@ -325,7 +329,9 @@ public abstract class MenuBase extends Container {
     public void removed(@Nonnull PlayerEntity player) {
         this.clearPlayerCursor(player);
         super.removed(player);
+        MenuManager.openMenus.remove(player);
         this.setValid(false);
+        this.closed();
         Messenger.debug(this.playerInventory.player, "Container removed", this.getClass());
     }
 
