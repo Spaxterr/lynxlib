@@ -129,4 +129,62 @@ public class ItemUtil {
         CompoundNBT nbt = itemStack.getOrCreateTag();
         nbt.putString(key, value);
     }
+
+    /**
+     * Set an item's NBT tag from a JSON string.
+     *
+     * @param itemStack The item stack
+     * @param nbtString NBT tag as a JSON string
+     */
+    public static void setNbt(ItemStack itemStack, String nbtString) throws CommandSyntaxException  {
+        CompoundNBT nbt = JsonToNBT.parseTag(nbtString);
+        itemStack.setTag(nbt);
+    }
+
+    public static boolean canFitItems(PlayerInventory inventory, Iterable<ItemStack> items) {
+        NonNullList<ItemStack> simulatedInventory = NonNullList.withSize(inventory.items.size(), ItemStack.EMPTY);
+
+        for (int i = 0; i < inventory.items.size(); i++) {
+            simulatedInventory.set(i, inventory.items.get(i).copy());
+        }
+
+        for (ItemStack item : items) {
+            int remaining = item.getCount();
+
+            for (ItemStack existing : simulatedInventory) {
+                if (ItemStack.isSame(existing, item) && ItemStack.tagMatches(existing, item)) {
+                    int spaceLeft = existing.getMaxStackSize() - existing.getCount();
+                    if (spaceLeft > 0) {
+                        int toAdd = Math.min(remaining, spaceLeft);
+                        existing.grow(toAdd);
+                        remaining -= toAdd;
+                    }
+                }
+                if (remaining == 0)
+                    break;
+            }
+
+            while (remaining > 0) {
+                int freeSlot = findFreeSlot(simulatedInventory);
+                if (freeSlot == -1) {
+                    return false;
+                }
+
+                int toAdd = Math.min(remaining, item.getMaxStackSize());
+                simulatedInventory.set(freeSlot, new ItemStack(item.getItem(), toAdd));
+                remaining -= toAdd;
+            }
+        }
+
+        return true;
+    }
+
+    private static int findFreeSlot(NonNullList<ItemStack> inventory) {
+        for (int i = 0; i < inventory.size(); i++) {
+            if (inventory.get(i).isEmpty()) {
+                return i;
+            }
+        }
+        return -1;
+    }
 }
