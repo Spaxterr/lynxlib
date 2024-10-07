@@ -80,4 +80,17 @@ public class Messenger {
             player.sendMessage(chatMessage, player.getUUID());
         }
     }
+
+    /**
+     * Send an informational message to a CommandSource instance.
+     *
+     * @param source  The command source
+     * @param message The info message
+     */
+    public static void info(final @Nullable CommandSource source, final String message) {
+       if (source != null) {
+            TextComponent chatMessage = formatMessage(INFO_PREFIX + " &f" + message);
+            source.sendSuccess(chatMessage, false);
+        }
+    }
 }
