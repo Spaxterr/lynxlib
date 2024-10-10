@@ -1,5 +1,6 @@
 package dev.spaxter.lynxlib.menu;
 
+import dev.spaxter.lynxlib.LynxLib;
 import dev.spaxter.lynxlib.chat.Messenger;
 import dev.spaxter.lynxlib.common.ItemUtil;
 import dev.spaxter.lynxlib.common.MagicValues;
@@ -275,10 +276,13 @@ public abstract class MenuBase extends Container {
     @Override
     @Nonnull
     public ItemStack clicked(int slot, int button, @Nonnull ClickType clickType, @Nonnull PlayerEntity player) {
-        if (this.isClickable) {
-            this.isClickable = false;
+        if (!this.isClickable) {
+            return ItemStack.EMPTY;
+        }
+
+        this.isClickable = false;
+        try {
             Messenger.debug(player, "You clicked slot &e" + slot, this.getClass());
-            this.refresh(player);
 
             if (slot < 0 || clickType == ClickType.THROW) {
                 return ItemStack.EMPTY;
@@ -290,9 +294,13 @@ public abstract class MenuBase extends Container {
                 try {
                     clickHandlers.get(clicked).operation(clicked, player);
                 } catch (Exception e) {
+                    LynxLib.logger.error(e);
                     throw new RuntimeException(e);
                 }
             }
+
+            this.refresh(player);
+        } finally {
             this.isClickable = true;
         }
         return ItemStack.EMPTY;
