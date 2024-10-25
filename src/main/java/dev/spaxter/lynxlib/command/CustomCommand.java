@@ -95,61 +95,166 @@ public abstract class CustomCommand {
         return this.name;
     }
 
+    public void setHelpText(String helpText) {
+        this.helpText = helpText;
+    }
+
+    public String getHelpText() {
+        return this.helpText;
+    }
+
     public void addArgument(String name, ArgumentType<?> argument) {
         this.arguments.put(name, argument);
+        this.suggestions.put(name, Lists.newArrayList());
+    }
+
+    public void addArgument(String name, ArgumentType<?> argument, boolean optional) {
+        if (optional) {
+            this.optionalArguments.add(name);
+        }
+        this.addArgument(name, argument);
+    }
+
+    public List<String> getArguments() {
+        return new ArrayList<>(this.arguments.keySet());
+    }
+
+    public List<String> getOptionalArguments() {
+        return new ArrayList<>(this.optionalArguments);
+    }
+
+    public void addAutoCompleteSuggestions(String argument, String... suggestions) {
+        this.suggestions.get(argument).addAll(Arrays.asList(suggestions));
+    }
+
+    public void addAutoCompleteSuggestion(String argument, String suggestion) {
+        this.suggestions.get(argument).add(suggestion);
+    }
+
+    public SuggestionProvider<CommandSource> getSuggestionProvider(String argument) {
+        return (context, builder) -> getSuggestionFuture(argument, builder);
+    }
+
+    public CompletableFuture<Suggestions> getSuggestionFuture(String argument, SuggestionsBuilder builder) {
+        this.suggestions.getOrDefault(argument, Collections.emptyList()).forEach(builder::suggest);
+        return builder.buildFuture();
     }
 
     public void addSubCommand(CustomCommand command) {
         this.subCommands.add(command);
+        command.setParentCommand(this);
     }
 
-    public void setPermission(String permission) {
+    public void setParentCommand(CustomCommand command) {
+        this.parentCommand = command;
+    }
+
+    public CustomCommand getParentCommand() {
+        return this.parentCommand;
+    }
+
+    public void setPermission(String permission, String description) {
         this.permission = permission;
+        PermissionAPI.registerNode(permission, DefaultPermissionLevel.ALL, description);
+    }
+
+    public String getPermission() {
+        return this.permission;
     }
 
     public LiteralArgumentBuilder<CommandSource> build() {
         LiteralArgumentBuilder<CommandSource> command = Commands.literal(this.name);
-        command.executes(this::executeCommand);
 
         if (!this.arguments.isEmpty()) {
-            this.arguments.forEach((name, type) -> {
-                command.then(Commands.argument(name, type).executes(this::executeCommand));
-            });
+            // Get a list of argument entries
+            List<Map.Entry<String, ArgumentType<?>>> argumentEntries = Lists.newArrayList(this.arguments.entrySet());
+
+            // Create the argument chain
+            ArgumentBuilder<CommandSource, ?> argumentChain = buildArgumentChain(argumentEntries, 0);
+
+            // Add the argument chain to the main command
+            if (argumentChain != null) {
+                command.then(argumentChain);
+            }
         }
 
+        // Set the base command to execute if no arguments are provided.
+        command = command.executes(this::executeCommand).requires(source -> this.checkPermission(source));
+
+        // Add subcommands if present
         if (!this.subCommands.isEmpty()) {
-            this.subCommands.forEach(subCommand -> command.then(subCommand.build()));
+            for (CustomCommand subCommand : this.subCommands) {
+                command.then(subCommand.build().requires(source -> subCommand.checkPermission(source)));
+            }
         }
 
         return command;
     }
 
+    private ArgumentBuilder<CommandSource, ?> buildArgumentChain(List<Map.Entry<String, ArgumentType<?>>> arguments,
+            int index) {
+        if (index >= arguments.size()) {
+            return null;
+        }
+
+        Map.Entry<String, ArgumentType<?>> entry = arguments.get(index);
+        String argName = entry.getKey();
+        ArgumentType<?> argType = entry.getValue();
+
+        RequiredArgumentBuilder<CommandSource, ?> argument = Commands.argument(argName, argType)
+                .executes(this::executeCommand);
+
+        // Add suggestions if available
+        if (!this.suggestions.getOrDefault(argName, Collections.emptyList()).isEmpty()) {
+            argument.suggests(getSuggestionProvider(argName));
+        }
+
+        // Recursively add the next argument in the chain
+        ArgumentBuilder<CommandSource, ?> nextArgument = buildArgumentChain(arguments, index + 1);
+        if (nextArgument != null) {
+            argument.then(nextArgument);
+        }
+
+        // If this argument is optional, ensure that the command can execute without it
+        if (this.optionalArguments.contains(argName)) {
+            argument.executes(this::executeCommand);
+        }
+
+        return argument;
+    }
+
     private int executeCommand(CommandContext<CommandSource> context) {
         try {
-            if (this.checkPermission(context.getSource())) {
-                return this.execute(context);
-            } else {
-                Messenger.info(context.getSource(), "&cYou do not have permission to use this command.");
-                return 1;
-            }
-        } catch (CommandSyntaxException e) {
+            return this.execute(context);
+        } catch (Exception e) {
+            LynxLib.logger.error(e);
+            Messenger.info(context.getSource(), "&c" + e.getLocalizedMessage());
             return 0;
         }
     }
 
-    private boolean checkPermission(CommandSource source) {
+    public boolean checkPermission(CommandSource source) {
         if (this.permission == null) {
             return true;
         }
 
         try {
             ServerPlayerEntity player = source.getPlayerOrException();
-            return PermissionAPI.hasPermission(player, this.permission);
-        } catch (CommandSyntaxException ignored) {
-            // Thrown if command is ran by console, no need to check permissions.
+            boolean hasPermission = PermissionAPI.hasPermission(player, this.permission);
+            return hasPermission;
+        } catch (CommandSyntaxException e) {
+            // Thrown if command was sent by console
             return true;
         }
     }
 
     public abstract int execute(CommandContext<CommandSource> context) throws CommandSyntaxException;
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        if (this.parentCommand == null) {
+            LiteralArgumentBuilder<CommandSource> command = this.build();
+            event.getDispatcher().register(command);
+        }
+    }
 }
